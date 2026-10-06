@@ -38,7 +38,7 @@ const storage = multer.diskStorage({
 
 module.exports = multer({
   storage,
-  limits: { fileSize: 8 * 1024 * 1024, fields: 12, fieldSize: 32 * 1024 },
+  limits: { fileSize: 8 * 1024 * 1024, fields: 50, fieldSize: 32 * 1024 },
   fileFilter: (_request, file, callback) => {
     if (!imageExtensions[file.mimetype]) {
       const error = new Error('Upload a JPG, PNG, or WebP image.')
