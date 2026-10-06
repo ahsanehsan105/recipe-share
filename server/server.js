@@ -37,7 +37,37 @@ const app = express()
 const port = process.env.PORT || 5000
 const uploadDirectory = ensureUploadDirectory(path.resolve(__dirname, 'uploads'))
 
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000' }))
+function getAllowedOrigins() {
+  const configuredOrigins = process.env.CLIENT_ORIGINS || process.env.CLIENT_ORIGIN || 'http://localhost:3000'
+
+  if (Array.isArray(configuredOrigins)) {
+    return configuredOrigins
+  }
+
+  return configuredOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+}
+
+app.use(cors({
+  origin(origin, callback) {
+    const allowedOrigins = getAllowedOrigins()
+    const isAllowed = !origin || allowedOrigins.includes(origin) || allowedOrigins.some((allowedOrigin) => {
+      if (!allowedOrigin.includes('*')) return false
+      const pattern = new RegExp(`^${allowedOrigin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\\\*/g, '.*')}$`)
+      return pattern.test(origin)
+    })
+
+    if (isAllowed) {
+      callback(null, true)
+      return
+    }
+
+    callback(new Error('Not allowed by CORS'))
+  },
+  credentials: true,
+}))
 app.use(express.json({ limit: '1mb' }))
 app.use('/uploads', express.static(uploadDirectory))
 app.use('/api/meals', mealRoutes)
