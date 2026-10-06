@@ -71,15 +71,22 @@ async function createRecipe(request, response, next) {
 
 async function getRecipeImage(request, response, next) {
   try {
-    const recipe = await Recipe.findById(request.params.id).select('+imageData +imageMimeType').lean()
+    const recipe = await Recipe.findById(request.params.id).select('+imageData +imageMimeType')
     if (!recipe?.imageData || !recipe.imageMimeType) {
       return response.status(404).json({ message: 'Recipe image not found.' })
+    }
+
+    const imageData = Buffer.isBuffer(recipe.imageData)
+      ? recipe.imageData
+      : recipe.imageData.value?.(true)
+    if (!Buffer.isBuffer(imageData) || imageData.length === 0) {
+      return response.status(404).json({ message: 'Recipe image data is unavailable.' })
     }
 
     response.set('Content-Type', recipe.imageMimeType)
     response.set('Cache-Control', 'public, max-age=3600, immutable')
     response.set('X-Content-Type-Options', 'nosniff')
-    return response.send(recipe.imageData)
+    return response.send(imageData)
   } catch (error) {
     if (error.name === 'CastError') return response.status(400).json({ message: 'Invalid recipe ID.' })
     return next(error)
