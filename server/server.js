@@ -1,3 +1,4 @@
+const fs = require('fs')
 const path = require('path')
 const cors = require('cors')
 const dotenv = require('dotenv')
@@ -13,9 +14,28 @@ const requireDatabase = require('./middleware/requireDatabase')
 
 dotenv.config({ path: path.join(__dirname, '.env') })
 
+function ensureUploadDirectory(directory) {
+  const candidates = [
+    directory,
+    path.resolve(process.cwd(), 'uploads'),
+    path.resolve('/tmp', 'recipe-uploads'),
+  ]
+
+  for (const candidate of candidates) {
+    try {
+      fs.mkdirSync(candidate, { recursive: true })
+      return candidate
+    } catch (_error) {
+      // Try the next safe fallback location.
+    }
+  }
+
+  return directory
+}
+
 const app = express()
 const port = process.env.PORT || 5000
-const uploadDirectory = path.join(__dirname, 'uploads')
+const uploadDirectory = ensureUploadDirectory(path.resolve(__dirname, 'uploads'))
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:3000' }))
 app.use(express.json({ limit: '1mb' }))

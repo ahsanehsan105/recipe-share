@@ -3,14 +3,31 @@ const fs = require('fs')
 const path = require('path')
 const multer = require('multer')
 
-const uploadDirectory = path.join(__dirname, '..', 'uploads')
+function ensureUploadDirectory(directory) {
+  const candidates = [
+    directory,
+    path.resolve(process.cwd(), 'uploads'),
+    path.resolve('/tmp', 'recipe-uploads'),
+  ]
+
+  for (const candidate of candidates) {
+    try {
+      fs.mkdirSync(candidate, { recursive: true })
+      return candidate
+    } catch (_error) {
+      // Try the next safe fallback location.
+    }
+  }
+
+  return directory
+}
+
+const uploadDirectory = ensureUploadDirectory(path.resolve(__dirname, '..', 'uploads'))
 const imageExtensions = {
   'image/jpeg': '.jpg',
   'image/png': '.png',
   'image/webp': '.webp',
 }
-
-fs.mkdirSync(uploadDirectory, { recursive: true })
 
 const storage = multer.diskStorage({
   destination: (_request, _file, callback) => callback(null, uploadDirectory),
