@@ -7,10 +7,11 @@ import { RecipeCard, type RecipeCardData } from '../components/recipe-card'
 import { SiteHeader } from '../components/site-header'
 import { getRandomMeal, getSharedRecipeCards, hydrateRecipeRatings, toMealCards } from '../lib/recipe-api'
 import { recipes } from '../lib/recipe-data'
+import { useSavedRecipes } from '../lib/use-saved-recipes'
 import { ArrowRight, Heart } from 'lucide-react'
 
 export default function Page() {
-  const [saved, setSaved] = useState<string[]>([])
+  const { saved, toggleSaved } = useSavedRecipes()
   const [communityRecipes, setCommunityRecipes] = useState<RecipeCardData[]>([])
   const [featuredRecipes, setFeaturedRecipes] = useState<RecipeCardData[]>([])
   const [randomMeal, setRandomMeal] = useState<RecipeCardData | null>(null)
@@ -27,10 +28,6 @@ export default function Page() {
   const allRecipes = useMemo(() => [...communityRecipes, ...featuredRecipes], [communityRecipes, featuredRecipes])
   const latestRecipes = [...(randomMeal ? [randomMeal] : []), ...allRecipes].slice(0, 5)
   const landingRecipes = allRecipes.slice(0, 3)
-
-  function toggleSaved(id: string) {
-    setSaved((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
-  }
 
   return (
     <>

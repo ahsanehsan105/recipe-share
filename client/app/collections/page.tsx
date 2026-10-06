@@ -6,13 +6,14 @@ import { RecipeCard, type RecipeCardData } from '../../components/recipe-card'
 import { SiteHeader } from '../../components/site-header'
 import { getMealCategories, getMealList, getMealsByArea, getMealsByCategory, getMealsByIngredient, getMealsByLetter, getSharedRecipeCards, hydrateRecipeRatings, searchMeals, toMealCards, type MealDbCategory } from '../../lib/recipe-api'
 import { recipes as defaultFeaturedRecipes } from '../../lib/recipe-data'
+import { useSavedRecipes } from '../../lib/use-saved-recipes'
 
 const letters = 'abcdefghijklmnopqrstuvwxyz'.split('')
 
 export default function CollectionsPage() {
+  const { saved, toggleSaved } = useSavedRecipes()
   const [sharedRecipes, setSharedRecipes] = useState<RecipeCardData[]>([])
   const [featuredRecipes, setFeaturedRecipes] = useState<RecipeCardData[]>([])
-  const [saved, setSaved] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [queryInitialized, setQueryInitialized] = useState(false)
   const [selectedLetter, setSelectedLetter] = useState('a')
@@ -89,10 +90,6 @@ export default function CollectionsPage() {
     return matchesQuery
   }), [allRecipes, query])
   const visibleRecipes = [...localResults, ...mealRecipes]
-
-  function toggleSaved(id: string) {
-    setSaved((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id])
-  }
 
   return (
     <main className="min-h-screen bg-[#f8f6f1] text-[#23352d]">
