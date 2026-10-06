@@ -85,7 +85,7 @@ export function RecipeShareForm({ onClose, onCreated, initialRecipe }: RecipeSha
         title: recipe.name,
         author: recipe.sharedBy,
         time: `${recipe.prepTime + recipe.cookTime} min`,
-        rating: 'New',
+        rating: '0',
         category: recipe.category,
         diet: recipe.diet === 'Everything' ? 'All diets' : recipe.diet,
         image: recipe.imagePath.startsWith('http') ? recipe.imagePath : `${SERVER_BASE_URL}${recipe.imagePath}`,

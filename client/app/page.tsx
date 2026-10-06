@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { RecipeCarousel } from '../components/recipe-carousel'
 import { RecipeCard, type RecipeCardData } from '../components/recipe-card'
 import { SiteHeader } from '../components/site-header'
-import { getRandomMeal, getSharedRecipeCards } from '../lib/recipe-api'
+import { getRandomMeal, getSharedRecipeCards, toMealCards } from '../lib/recipe-api'
 import { recipes } from '../lib/recipe-data'
 import { ArrowRight, Heart } from 'lucide-react'
 

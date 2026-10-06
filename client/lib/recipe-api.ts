@@ -13,6 +13,13 @@ type ApiRecipeCard = {
   category: string
   diet: string
   imagePath: string
+  rating?: number
+}
+
+function formatRating(value: number | string | null | undefined): string {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return '0'
+  return numericValue > 0 ? numericValue.toFixed(1) : '0'
 }
 
 export async function getSharedRecipeCards(): Promise<RecipeCardData[]> {
@@ -20,12 +27,29 @@ export async function getSharedRecipeCards(): Promise<RecipeCardData[]> {
   if (!response.ok) throw new Error('Shared recipes are temporarily unavailable.')
 
   const result = await response.json() as { recipes: ApiRecipeCard[] }
-  return result.recipes.map((recipe) => ({
+  const recipes = await Promise.all(result.recipes.map(async (recipe) => {
+    const listRating = typeof recipe.rating === 'number' ? recipe.rating : null
+
+    if (listRating !== null && listRating >= 0) {
+      return { ...recipe, rating: listRating }
+    }
+
+    try {
+      const feedbackResponse = await fetch(`${API_BASE_URL}/recipes/${encodeURIComponent(recipe._id)}/feedback`)
+      if (!feedbackResponse.ok) return { ...recipe, rating: 0 }
+      const feedback = await feedbackResponse.json() as { summary?: { average?: number | null } }
+      return { ...recipe, rating: typeof feedback?.summary?.average === 'number' ? feedback.summary.average : 0 }
+    } catch {
+      return { ...recipe, rating: 0 }
+    }
+  }))
+
+  return recipes.map((recipe) => ({
     id: recipe._id,
     title: recipe.name,
     author: recipe.sharedBy,
     time: `${recipe.prepTime + recipe.cookTime} min`,
-    rating: 'New',
+    rating: formatRating(recipe.rating ?? 0),
     category: recipe.category,
     diet: recipe.diet === 'Everything' ? 'All diets' : recipe.diet,
     image: recipe.imagePath.startsWith('http') ? recipe.imagePath : `${SERVER_BASE_URL}${recipe.imagePath}`,

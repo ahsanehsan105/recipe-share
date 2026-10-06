@@ -25,6 +25,13 @@ type ApiRecipe = {
   instructions: string[]
   imagePath: string
   videoUrl?: string
+  rating?: number
+}
+
+function formatRating(value: number | string | null | undefined): string {
+  const numericValue = Number(value)
+  if (!Number.isFinite(numericValue)) return '0'
+  return numericValue > 0 ? numericValue.toFixed(1) : '0'
 }
 
 export default function RecipeDetailPage() {
@@ -60,7 +67,7 @@ export default function RecipeDetailPage() {
           title: item.name,
           author: item.sharedBy,
           time: `${item.prepTime + item.cookTime} min`,
-          rating: 'New',
+          rating: formatRating(item.rating ?? 0),
           category: item.category,
           diet: item.diet === 'Everything' ? 'All diets' : item.diet,
           image: item.imagePath.startsWith('http') ? item.imagePath : `${SERVER_BASE_URL}${item.imagePath}`,
