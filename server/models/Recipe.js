@@ -46,6 +46,8 @@ const recipeSchema = new mongoose.Schema({
   cookTime: { type: Number, required: true, min: 0, max: 1440 },
   servings: { type: Number, required: true, min: 1, max: 100 },
   imagePath: { type: String, required: true },
+  imageData: { type: Buffer, select: false },
+  imageMimeType: { type: String, select: false },
   videoUrl: {
     type: String,
     trim: true,

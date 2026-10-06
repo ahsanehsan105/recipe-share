@@ -35,7 +35,7 @@ async function createRecipe(request, response, next) {
       return response.status(400).json({ message: 'A recipe image is required.' })
     }
 
-    const recipe = await Recipe.create({
+    const recipe = new Recipe({
       name: request.body.name,
       sharedBy: request.body.sharedBy,
       email: request.body.email,
@@ -47,17 +47,41 @@ async function createRecipe(request, response, next) {
       prepTime: Number(request.body.prepTime),
       cookTime: Number(request.body.cookTime),
       servings: Number(request.body.servings),
-      imagePath: request.file ? `/uploads/${request.file.filename}` : mealDbImage,
+      imagePath: mealDbImage || 'pending',
+      imageData: request.file ? await fs.readFile(request.file.path) : undefined,
+      imageMimeType: request.file?.mimetype,
       videoUrl: request.body.videoUrl?.trim() || undefined,
     })
+    if (request.file) recipe.imagePath = `/api/recipes/${recipe._id}/image`
+    await recipe.save()
 
     const { email, ...publicRecipe } = recipe.toObject()
+    delete publicRecipe.imageData
+    delete publicRecipe.imageMimeType
+    if (request.file) await fs.unlink(request.file.path).catch(() => {})
     return response.status(201).json({ recipe: { ...publicRecipe, rating: 0 } })
   } catch (error) {
     if (request.file) await fs.unlink(request.file.path).catch(() => {})
     if (error.name === 'ValidationError' || error.name === 'CastError') {
       return response.status(400).json({ message: error.message })
     }
+    return next(error)
+  }
+}
+
+async function getRecipeImage(request, response, next) {
+  try {
+    const recipe = await Recipe.findById(request.params.id).select('+imageData +imageMimeType').lean()
+    if (!recipe?.imageData || !recipe.imageMimeType) {
+      return response.status(404).json({ message: 'Recipe image not found.' })
+    }
+
+    response.set('Content-Type', recipe.imageMimeType)
+    response.set('Cache-Control', 'public, max-age=3600, immutable')
+    response.set('X-Content-Type-Options', 'nosniff')
+    return response.send(recipe.imageData)
+  } catch (error) {
+    if (error.name === 'CastError') return response.status(400).json({ message: 'Invalid recipe ID.' })
     return next(error)
   }
 }
@@ -94,4 +118,4 @@ async function getRecipeById(request, response, next) {
   }
 }
 
-module.exports = { createRecipe, getRecipes, getRecipeById }
+module.exports = { createRecipe, getRecipeById, getRecipeImage, getRecipes }
