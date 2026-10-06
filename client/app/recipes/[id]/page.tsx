@@ -43,6 +43,8 @@ export default function RecipeDetailPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    let active = true
+
     const featuredRecipe = recipes.find((item) => item.id === id)
     if (featuredRecipe) {
       void getRecipeAverageRating(id).then((average) => {
@@ -58,10 +60,10 @@ export default function RecipeDetailPage() {
           setLoading(false)
         }
       })
-      return
+
+      return () => { active = false }
     }
 
-    let active = true
     setRecipe(null)
     setLoading(true)
     setError('')

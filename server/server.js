@@ -16,9 +16,9 @@ dotenv.config({ path: path.join(__dirname, '.env') })
 
 function ensureUploadDirectory(directory) {
   const candidates = [
+    path.resolve('/tmp', 'recipe-uploads'),
     directory,
     path.resolve(process.cwd(), 'uploads'),
-    path.resolve('/tmp', 'recipe-uploads'),
   ]
 
   for (const candidate of candidates) {

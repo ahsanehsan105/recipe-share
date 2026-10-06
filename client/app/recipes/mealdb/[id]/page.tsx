@@ -24,6 +24,7 @@ export default function MealDbDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [shareOpen, setShareOpen] = useState(false)
+  const [toastTitle, setToastTitle] = useState('')
 
   useEffect(() => {
     const cachedMeal = getCachedMeal(id)
@@ -41,6 +42,13 @@ export default function MealDbDetailPage() {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [id])
+
+  useEffect(() => {
+    if (!toastTitle) return
+
+    const timer = window.setTimeout(() => setToastTitle(''), 3200)
+    return () => window.clearTimeout(timer)
+  }, [toastTitle])
 
   function mealCreated(recipe: SharedRecipeCard) {
     setShareOpen(false)
@@ -66,7 +74,20 @@ export default function MealDbDetailPage() {
           <RecipeCommunityPanel recipeId={meal.id} recipeTitle={meal.title} />
         </>}
       </div>
-      {shareOpen && meal && <RecipeShareForm initialRecipe={{ title: meal.title, image: meal.image, servings: '', ingredients: meal.ingredients, instructions: meal.instructions }} onClose={() => setShareOpen(false)} onCreated={mealCreated} />}
+      {shareOpen && meal && <RecipeShareForm initialRecipe={{ title: meal.title, image: meal.image, servings: '', ingredients: meal.ingredients, instructions: meal.instructions }} onClose={() => setShareOpen(false)} onCreated={mealCreated} onSuccess={(title) => setToastTitle(title)} />}
+      {toastTitle && <div className="pointer-events-none fixed bottom-5 right-5 z-[60] max-w-sm rounded-2xl border border-[#dfe3dc] bg-[#fbfaf7]/95 px-4 py-3 shadow-[0_18px_48px_rgba(22,34,29,0.18)] backdrop-blur-md">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 grid size-8 place-items-center rounded-full bg-[#dbe8c9] text-[#2d4d3a]">
+            <svg viewBox="0 0 20 20" fill="none" aria-hidden="true" className="size-4">
+              <path d="M5.5 10.5L8.5 13.5L14.5 7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8b9a8b]">Recipe shared</p>
+            <p className="mt-1 text-sm font-medium text-[#294337]">{toastTitle} was added successfully.</p>
+          </div>
+        </div>
+      </div>}
     </main>
   )
 }

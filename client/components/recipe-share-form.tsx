@@ -21,6 +21,7 @@ export type SharedRecipeCard = {
 type RecipeShareFormProps = {
   onClose: () => void
   onCreated: (recipe: SharedRecipeCard) => void
+  onSuccess?: (title: string) => void
   initialRecipe?: {
     title: string
     servings?: string
@@ -33,7 +34,7 @@ type RecipeShareFormProps = {
 const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Drinks', 'Baking']
 const diets = ['Everything', 'Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free']
 
-export function RecipeShareForm({ onClose, onCreated, initialRecipe }: RecipeShareFormProps) {
+export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }: RecipeShareFormProps) {
   const [image, setImage] = useState<File | null>(null)
   const [preview, setPreview] = useState(initialRecipe?.image ?? '')
   const [error, setError] = useState('')
@@ -80,7 +81,7 @@ export function RecipeShareForm({ onClose, onCreated, initialRecipe }: RecipeSha
       if (!response.ok) throw new Error(result.message ?? 'We could not share your recipe. Please try again.')
 
       const recipe = result.recipe
-      onCreated({
+      const createdRecipe = {
         id: recipe._id,
         title: recipe.name,
         author: recipe.sharedBy,
@@ -90,8 +91,10 @@ export function RecipeShareForm({ onClose, onCreated, initialRecipe }: RecipeSha
         diet: recipe.diet === 'Everything' ? 'All diets' : recipe.diet,
         image: recipe.imagePath.startsWith('http') ? recipe.imagePath : `${SERVER_BASE_URL}${recipe.imagePath}`,
         color: 'bg-[#dbe8c9]',
-      })
+      }
+      onCreated(createdRecipe)
       onClose()
+      onSuccess?.(createdRecipe.title)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Something went wrong. Please try again.')
     } finally {
