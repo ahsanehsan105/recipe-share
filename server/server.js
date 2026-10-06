@@ -88,7 +88,10 @@ app.use((error, _request, response, _next) => {
   const status = error instanceof multer.MulterError
     ? error.code === 'LIMIT_FILE_SIZE' ? 413 : 400
     : error.status || 500
-  response.status(status).json({ message: error.message || 'An unexpected server error occurred.' })
+  const message = error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE'
+    ? 'Recipe images must be 2 MB or smaller.'
+    : error.message || 'An unexpected server error occurred.'
+  response.status(status).json({ message })
 })
 
 function wait(milliseconds) {

@@ -1,4 +1,3 @@
-const fs = require('fs/promises')
 const Recipe = require('../models/Recipe')
 const RecipeFeedback = require('../models/RecipeFeedback')
 
@@ -48,7 +47,7 @@ async function createRecipe(request, response, next) {
       cookTime: Number(request.body.cookTime),
       servings: Number(request.body.servings),
       imagePath: mealDbImage || 'pending',
-      imageData: request.file ? await fs.readFile(request.file.path) : undefined,
+      imageData: request.file?.buffer,
       imageMimeType: request.file?.mimetype,
       videoUrl: request.body.videoUrl?.trim() || undefined,
     })
@@ -58,10 +57,8 @@ async function createRecipe(request, response, next) {
     const { email, ...publicRecipe } = recipe.toObject()
     delete publicRecipe.imageData
     delete publicRecipe.imageMimeType
-    if (request.file) await fs.unlink(request.file.path).catch(() => {})
     return response.status(201).json({ recipe: { ...publicRecipe, rating: 0 } })
   } catch (error) {
-    if (request.file) await fs.unlink(request.file.path).catch(() => {})
     if (error.name === 'ValidationError' || error.name === 'CastError') {
       return response.status(400).json({ message: error.message })
     }

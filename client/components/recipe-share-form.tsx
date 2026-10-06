@@ -5,6 +5,7 @@ import { Camera, ChefHat, Clock3, ImagePlus, LoaderCircle, Plus, Users, Video, X
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api'
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '')
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
 export type SharedRecipeCard = {
   id: string
@@ -63,6 +64,13 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }
 
   function chooseImage(file?: File) {
     if (!file) return
+    if (file.size > MAX_IMAGE_SIZE) {
+      setError('Choose an image that is 2 MB or smaller.')
+      setImage(null)
+      setPreview(initialRecipe?.image ?? '')
+      return
+    }
+    setError('')
     setImage(file)
     setPreview(URL.createObjectURL(file))
   }
@@ -128,7 +136,7 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }
             </div>
 
             <label className="group relative flex min-h-[190px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#b8c6b5] bg-[#f1f3ed] text-center transition hover:border-[#7e9977] hover:bg-[#ebf0e6]">
-              {preview ? <img src={preview} alt="Recipe preview" className="absolute inset-0 size-full object-cover" /> : <><span className="mb-3 grid size-11 place-items-center rounded-full bg-white text-[#6e8665] shadow-sm"><ImagePlus size={20} /></span><span className="text-[12px] font-semibold text-[#52635a]">Add a recipe photo</span><span className="mt-1 text-[11px] text-[#8b9a8b]">JPG, PNG or WebP · up to 8 MB</span></>}
+              {preview ? <img src={preview} alt="Recipe preview" className="absolute inset-0 size-full object-cover" /> : <><span className="mb-3 grid size-11 place-items-center rounded-full bg-white text-[#6e8665] shadow-sm"><ImagePlus size={20} /></span><span className="text-[12px] font-semibold text-[#52635a]">Add a recipe photo</span><span className="mt-1 text-[11px] text-[#8b9a8b]">JPG, PNG or WebP · up to 2 MB</span></>}
               <input name="image" type="file" accept="image/jpeg,image/png,image/webp" required={!initialRecipe?.image} className="sr-only" onChange={(event) => chooseImage(event.target.files?.[0])} />
               {preview && <span className="absolute bottom-2 right-2 grid size-9 place-items-center rounded-full bg-[#fbfaf7]/90 text-[#52635a] shadow"><Camera size={17} /></span>}
             </label>
