@@ -22,6 +22,26 @@ function formatRating(value: number | string | null | undefined): string {
   return numericValue > 0 ? numericValue.toFixed(1) : '0'
 }
 
+export async function getRecipeAverageRating(recipeId: string): Promise<number> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/recipes/${encodeURIComponent(recipeId)}/feedback`)
+    if (!response.ok) return 0
+    const result = await response.json() as { summary?: { average?: number | null } }
+    return typeof result?.summary?.average === 'number' ? result.summary.average : 0
+  } catch {
+    return 0
+  }
+}
+
+export async function hydrateRecipeRatings<T extends { id: string; rating?: string | number }>(items: T[]): Promise<T[]> {
+  const hydratedItems = await Promise.all(items.map(async (item) => {
+    const average = await getRecipeAverageRating(item.id)
+    return { ...item, rating: formatRating(average) } as T
+  }))
+
+  return hydratedItems
+}
+
 export async function getSharedRecipeCards(): Promise<RecipeCardData[]> {
   const response = await fetch(`${API_BASE_URL}/recipes`)
   if (!response.ok) throw new Error('Shared recipes are temporarily unavailable.')

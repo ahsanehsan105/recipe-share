@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Search } from 'lucide-react'
 import { RecipeCard, type RecipeCardData } from '../../components/recipe-card'
 import { SiteHeader } from '../../components/site-header'
-import { getMealCategories, getMealList, getMealsByArea, getMealsByCategory, getMealsByIngredient, getMealsByLetter, getSharedRecipeCards, searchMeals, toMealCards, type MealDbCategory } from '../../lib/recipe-api'
-import { recipes as featuredRecipes } from '../../lib/recipe-data'
+import { getMealCategories, getMealList, getMealsByArea, getMealsByCategory, getMealsByIngredient, getMealsByLetter, getSharedRecipeCards, hydrateRecipeRatings, searchMeals, toMealCards, type MealDbCategory } from '../../lib/recipe-api'
+import { recipes as defaultFeaturedRecipes } from '../../lib/recipe-data'
 
 const letters = 'abcdefghijklmnopqrstuvwxyz'.split('')
 
 export default function CollectionsPage() {
   const [sharedRecipes, setSharedRecipes] = useState<RecipeCardData[]>([])
+  const [featuredRecipes, setFeaturedRecipes] = useState<RecipeCardData[]>([])
   const [saved, setSaved] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [queryInitialized, setQueryInitialized] = useState(false)
@@ -28,6 +29,7 @@ export default function CollectionsPage() {
   useEffect(() => {
     let active = true
     getSharedRecipeCards().then((items) => { if (active) setSharedRecipes(items) }).catch(() => {})
+    hydrateRecipeRatings(defaultFeaturedRecipes.map((recipe) => ({ ...recipe, source: undefined, detail: undefined }))).then((items) => { if (active) setFeaturedRecipes(items as RecipeCardData[]) }).catch(() => {})
     getMealCategories().then((items) => { if (active) setCategories(items) }).catch(() => {})
     getMealList('areas').then((items) => { if (active) setAreas(items) }).catch(() => {})
     getMealList('ingredients').then((items) => { if (active) setIngredients(items) }).catch(() => {})
@@ -81,7 +83,7 @@ export default function CollectionsPage() {
     return () => { active = false; window.clearTimeout(timer) }
   }, [query, queryInitialized, selectedArea, selectedCategory, selectedIngredient, selectedLetter])
 
-  const allRecipes = useMemo(() => [...sharedRecipes, ...featuredRecipes], [sharedRecipes])
+  const allRecipes = useMemo(() => [...sharedRecipes, ...featuredRecipes], [sharedRecipes, featuredRecipes])
   const localResults = useMemo(() => allRecipes.filter((recipe) => {
     const matchesQuery = `${recipe.title} ${recipe.author} ${recipe.category}`.toLowerCase().includes(query.toLowerCase())
     return matchesQuery

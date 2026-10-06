@@ -52,7 +52,7 @@ async function createRecipe(request, response, next) {
     })
 
     const { email, ...publicRecipe } = recipe.toObject()
-    return response.status(201).json({ recipe: publicRecipe })
+    return response.status(201).json({ recipe: { ...publicRecipe, rating: 0 } })
   } catch (error) {
     if (request.file) await fs.unlink(request.file.path).catch(() => {})
     if (error.name === 'ValidationError' || error.name === 'CastError') {

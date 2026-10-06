@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation'
 import { ArrowLeft, ArrowUpRight, ChefHat, Clock3, CookingPot, Users, Video } from 'lucide-react'
 import { RecipeCommunityPanel } from '../../../components/recipe-community-panel'
 import { SiteHeader } from '../../../components/site-header'
+import { getRecipeAverageRating } from '../../../lib/recipe-api'
 import { recipes, type RecipeDetailData } from '../../../lib/recipe-data'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api'
@@ -44,8 +45,19 @@ export default function RecipeDetailPage() {
   useEffect(() => {
     const featuredRecipe = recipes.find((item) => item.id === id)
     if (featuredRecipe) {
-      setRecipe(featuredRecipe)
-      setLoading(false)
+      void getRecipeAverageRating(id).then((average) => {
+        if (!active) return
+        setRecipe({
+          ...featuredRecipe,
+          rating: average > 0 ? average.toFixed(1) : '0',
+        })
+        setLoading(false)
+      }).catch(() => {
+        if (active) {
+          setRecipe({ ...featuredRecipe, rating: '0' })
+          setLoading(false)
+        }
+      })
       return
     }
 
