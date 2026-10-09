@@ -71,10 +71,10 @@ export function SiteHeader({ onRecipeCreated, variant = 'standard' }: SiteHeader
     <>
       <header className={`site-nav ${isHome ? 'fixed inset-x-0 top-0' : 'sticky top-0'} z-40 w-full border-b backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300 ${transparent ? 'border-transparent bg-transparent shadow-none' : 'border-[#dfe3dc]/90 bg-[#fbfaf7]/95 shadow-[0_6px_24px_rgba(35,53,45,0.08)]'}`}>
         <div className="mx-auto flex h-[72px] max-w-[1240px] items-center justify-between px-5 lg:px-8">
-          <Link href="/" className="group flex items-center gap-3" aria-label="Recipe Share home" onClick={() => setMenuOpen(false)}>
+          <a href="/" className="group flex items-center gap-3" aria-label="Recipe Share home" onClick={() => setMenuOpen(false)}>
             <span className={`grid size-9 place-items-center rounded-full transition-transform duration-300 group-hover:rotate-[-8deg] ${transparent ? 'bg-white/15 text-white' : 'bg-[#dbe8c9] text-[#486144]'}`}><ChefHat size={19} strokeWidth={1.9} /></span>
             <span className={`font-serif text-[25px] tracking-[-0.04em] transition-colors duration-300 ${transparent ? 'text-white' : 'text-[#294337]'}`}>Recipe Share<span className={transparent ? 'text-[#efad80]' : 'text-[#b76e43]'}>.</span></span>
-          </Link>
+          </a>
 
           {!recipeDetail && <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
             {navigation.map((item, index) => {

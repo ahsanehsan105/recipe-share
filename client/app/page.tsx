@@ -13,7 +13,7 @@ import { ArrowRight, Heart } from 'lucide-react'
 export default function Page() {
   const { saved, toggleSaved } = useSavedRecipes()
   const [communityRecipes, setCommunityRecipes] = useState<RecipeCardData[]>([])
-  const [featuredRecipes, setFeaturedRecipes] = useState<RecipeCardData[]>([])
+  const [featuredRecipes, setFeaturedRecipes] = useState<RecipeCardData[]>(recipes)
   const [randomMeal, setRandomMeal] = useState<RecipeCardData | null>(null)
 
   useEffect(() => {
