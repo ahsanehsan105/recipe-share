@@ -25,7 +25,7 @@ type RecipeShareFormProps = {
   onSuccess?: (title: string) => void
 }
 
-const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Snacks', 'Drinks', 'Baking', 'Main Course', 'Breakfast / Lunch']
+const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Snacks', 'Drinks', 'Baking', 'Beverage', 'Main Course', 'Breakfast / Lunch']
 const diets = ['Everything', 'Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free']
 
 export function RecipeShareForm({ onClose, onCreated, onSuccess }: RecipeShareFormProps) {
