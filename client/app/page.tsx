@@ -5,29 +5,23 @@ import Link from 'next/link'
 import { RecipeCarousel } from '../components/recipe-carousel'
 import { RecipeCard, type RecipeCardData } from '../components/recipe-card'
 import { SiteHeader } from '../components/site-header'
-import { getRandomMeal, getSharedRecipeCards, hydrateRecipeRatings, toMealCards } from '../lib/recipe-api'
-import { recipes } from '../lib/recipe-data'
+import { getSharedRecipeCards } from '../lib/recipe-api'
 import { useSavedRecipes } from '../lib/use-saved-recipes'
 import { ArrowRight, Heart } from 'lucide-react'
 
 export default function Page() {
   const { saved, toggleSaved } = useSavedRecipes()
   const [communityRecipes, setCommunityRecipes] = useState<RecipeCardData[]>([])
-  const [featuredRecipes, setFeaturedRecipes] = useState<RecipeCardData[]>(recipes)
-  const [randomMeal, setRandomMeal] = useState<RecipeCardData | null>(null)
 
   useEffect(() => {
     let active = true
     getSharedRecipeCards().then((items) => { if (active) setCommunityRecipes(items) }).catch(() => {})
-    hydrateRecipeRatings(recipes.map((recipe) => ({ ...recipe, source: undefined, detail: undefined }))).then((items) => { if (active) setFeaturedRecipes(items as RecipeCardData[]) }).catch(() => {})
-    getRandomMeal().then((meal) => { if (active) setRandomMeal(toMealCards([meal])[0]) }).catch(() => {})
 
     return () => { active = false }
   }, [])
 
-  const allRecipes = useMemo(() => [...communityRecipes, ...featuredRecipes], [communityRecipes, featuredRecipes])
-  const latestRecipes = [...(randomMeal ? [randomMeal] : []), ...allRecipes].slice(0, 5)
-  const landingRecipes = allRecipes.slice(0, 3)
+  const latestRecipes = communityRecipes.slice(0, 5)
+  const landingRecipes = communityRecipes.slice(0, 3)
 
   return (
     <>

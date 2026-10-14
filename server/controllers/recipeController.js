@@ -16,21 +16,9 @@ async function getRecipeRatingsById(recipeIds) {
   return Object.fromEntries(ratings.map((entry) => [entry._id, Number((entry.average || 0).toFixed(1))]))
 }
 
-function getMealDbImageUrl(value) {
-  try {
-    const url = new URL(String(value || ''))
-    const isMealDbHost = url.hostname === 'themealdb.com' || url.hostname.endsWith('.themealdb.com')
-    if (url.protocol !== 'https:' || !isMealDbHost || !url.pathname.startsWith('/images/media/meals/')) return ''
-    return url.toString()
-  } catch {
-    return ''
-  }
-}
-
 async function createRecipe(request, response, next) {
   try {
-    const mealDbImage = getMealDbImageUrl(request.body.imageUrl)
-    if (!request.file && !mealDbImage) {
+    if (!request.file) {
       return response.status(400).json({ message: 'A recipe image is required.' })
     }
 
@@ -46,7 +34,7 @@ async function createRecipe(request, response, next) {
       prepTime: Number(request.body.prepTime),
       cookTime: Number(request.body.cookTime),
       servings: Number(request.body.servings),
-      imagePath: mealDbImage || 'pending',
+      imagePath: 'pending',
       imageData: request.file?.buffer,
       imageMimeType: request.file?.mimetype,
       videoUrl: request.body.videoUrl?.trim() || undefined,

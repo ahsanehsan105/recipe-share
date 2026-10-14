@@ -23,31 +23,23 @@ type RecipeShareFormProps = {
   onClose: () => void
   onCreated: (recipe: SharedRecipeCard) => void
   onSuccess?: (title: string) => void
-  initialRecipe?: {
-    title: string
-    servings?: string
-    image?: string
-    ingredients: Array<{ name: string; measure: string }>
-    instructions: string[]
-  }
 }
 
-const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Drinks', 'Baking']
+const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Snacks', 'Drinks', 'Baking', 'Main Course', 'Breakfast / Lunch']
 const diets = ['Everything', 'Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free']
 
-export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }: RecipeShareFormProps) {
+export function RecipeShareForm({ onClose, onCreated, onSuccess }: RecipeShareFormProps) {
   const [image, setImage] = useState<File | null>(null)
-  const [preview, setPreview] = useState(initialRecipe?.image ?? '')
+  const [preview, setPreview] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-  const initialServings = Number.parseInt(initialRecipe?.servings?.match(/\d+/)?.[0] || '', 10)
-  const [recipeName, setRecipeName] = useState(initialRecipe?.title ?? '')
-  const [ingredientText, setIngredientText] = useState(initialRecipe?.ingredients.map((ingredient) => [ingredient.measure, ingredient.name].filter(Boolean).join(' ')).join('\n') ?? '')
-  const [instructionText, setInstructionText] = useState(initialRecipe?.instructions.join('\n') ?? '')
-  const [servings, setServings] = useState(String(initialServings > 0 ? Math.min(initialServings, 100) : initialRecipe ? '' : 4))
-  const [category, setCategory] = useState(initialRecipe ? '' : 'Dinner')
-  const [prepTime, setPrepTime] = useState(initialRecipe ? '' : '15')
-  const [cookTime, setCookTime] = useState(initialRecipe ? '' : '30')
+  const [recipeName, setRecipeName] = useState('')
+  const [ingredientText, setIngredientText] = useState('')
+  const [instructionText, setInstructionText] = useState('')
+  const [servings, setServings] = useState('4')
+  const [category, setCategory] = useState('Dinner')
+  const [prepTime, setPrepTime] = useState('15')
+  const [cookTime, setCookTime] = useState('30')
 
   useEffect(() => {
     if (!preview) return
@@ -67,7 +59,7 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }
     if (file.size > MAX_IMAGE_SIZE) {
       setError('Choose an image that is 2 MB or smaller.')
       setImage(null)
-      setPreview(initialRecipe?.image ?? '')
+      setPreview('')
       return
     }
     setError('')
@@ -123,7 +115,6 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }
         </div>
 
         <form onSubmit={submitRecipe} className="space-y-7 px-5 py-6 sm:px-8 sm:py-7">
-          {initialRecipe?.image && <input type="hidden" name="imageUrl" value={initialRecipe.image} />}
           <div className="grid gap-5 sm:grid-cols-[1fr_220px]">
             <div className="space-y-4">
               <label className="block text-[12px] font-semibold text-[#52635a]">Recipe name <span className="text-[#c8754c]">*</span><input name="name" required maxLength={100} value={recipeName} onChange={(event) => setRecipeName(event.target.value)} placeholder="e.g. Sunday lemon olive-oil cake" className="mt-2 h-11 w-full rounded-lg border border-[#dce2d8] bg-white px-3.5 text-sm font-normal text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
@@ -137,7 +128,7 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }
 
             <label className="group relative flex min-h-[190px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#b8c6b5] bg-[#f1f3ed] text-center transition hover:border-[#7e9977] hover:bg-[#ebf0e6]">
               {preview ? <img src={preview} alt="Recipe preview" className="absolute inset-0 size-full object-cover" /> : <><span className="mb-3 grid size-11 place-items-center rounded-full bg-white text-[#6e8665] shadow-sm"><ImagePlus size={20} /></span><span className="text-[12px] font-semibold text-[#52635a]">Add a recipe photo</span><span className="mt-1 text-[11px] text-[#8b9a8b]">JPG, PNG or WebP · up to 2 MB</span></>}
-              <input name="image" type="file" accept="image/jpeg,image/png,image/webp" required={!initialRecipe?.image} className="sr-only" onChange={(event) => chooseImage(event.target.files?.[0])} />
+              <input name="image" type="file" accept="image/jpeg,image/png,image/webp" required className="sr-only" onChange={(event) => chooseImage(event.target.files?.[0])} />
               {preview && <span className="absolute bottom-2 right-2 grid size-9 place-items-center rounded-full bg-[#fbfaf7]/90 text-[#52635a] shadow"><Camera size={17} /></span>}
             </label>
           </div>
@@ -152,8 +143,8 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess, initialRecipe }
           </div>
 
           <div className="grid grid-cols-3 gap-3">
-            <label className="block text-[12px] font-semibold text-[#52635a]"><span className="flex items-center gap-1.5"><Clock3 size={13} /> Prep (min)</span><input name="prepTime" type="number" required min="0" max="1440" value={prepTime} onChange={(event) => setPrepTime(event.target.value)} placeholder={initialRecipe ? 'Not provided' : undefined} className="mt-2 h-10 w-full rounded-lg border border-[#dce2d8] bg-white px-3 text-sm font-normal text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
-            <label className="block text-[12px] font-semibold text-[#52635a]"><span className="flex items-center gap-1.5"><Clock3 size={13} /> Cook (min)</span><input name="cookTime" type="number" required min="0" max="1440" value={cookTime} onChange={(event) => setCookTime(event.target.value)} placeholder={initialRecipe ? 'Not provided' : undefined} className="mt-2 h-10 w-full rounded-lg border border-[#dce2d8] bg-white px-3 text-sm font-normal text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
+            <label className="block text-[12px] font-semibold text-[#52635a]"><span className="flex items-center gap-1.5"><Clock3 size={13} /> Prep (min)</span><input name="prepTime" type="number" required min="0" max="1440" value={prepTime} onChange={(event) => setPrepTime(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-[#dce2d8] bg-white px-3 text-sm font-normal text-[#294337] outline-none focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
+            <label className="block text-[12px] font-semibold text-[#52635a]"><span className="flex items-center gap-1.5"><Clock3 size={13} /> Cook (min)</span><input name="cookTime" type="number" required min="0" max="1440" value={cookTime} onChange={(event) => setCookTime(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-[#dce2d8] bg-white px-3 text-sm font-normal text-[#294337] outline-none focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
             <label className="block text-[12px] font-semibold text-[#52635a]"><span className="flex items-center gap-1.5"><Users size={13} /> Serves</span><input name="servings" type="number" required min="1" max="100" value={servings} onChange={(event) => setServings(event.target.value)} className="mt-2 h-10 w-full rounded-lg border border-[#dce2d8] bg-white px-3 text-sm font-normal text-[#294337] outline-none focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
           </div>
 

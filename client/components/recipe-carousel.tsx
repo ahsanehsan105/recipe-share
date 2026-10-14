@@ -11,7 +11,6 @@ export type CarouselRecipe = {
   category: string
   time: string
   image: string
-  source?: 'mealdb'
 }
 
 type RecipeCarouselProps = {
@@ -41,10 +40,23 @@ export function RecipeCarousel({ recipes }: RecipeCarouselProps) {
     setActiveIndex((index) => recipes.length ? index % recipes.length : 0)
   }, [recipes.length])
 
-  if (!recipes.length) return null
+  if (!recipes.length) {
+    return (
+      <section id="top" className="flex min-h-[620px] items-center bg-[#263d32] text-white lg:min-h-[calc(100svh-72px)]" aria-busy="true">
+        <div className="mx-auto w-full max-w-[1240px] px-5 py-20 lg:px-8 lg:py-24">
+          <div className="max-w-[760px]">
+            <p className="mb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[#f0b27e]"><span className="h-px w-7 bg-[#f0b27e]" /> Cook with intention</p>
+            <h1 className="font-serif text-[54px] leading-[0.96] tracking-[-0.045em] sm:text-[72px] lg:text-[82px]">Good food is<br /><em className="font-normal text-[#efad80]">meant to be shared.</em></h1>
+            <p className="mt-6 max-w-[500px] text-[15px] leading-7 text-white/80 sm:text-base">A thoughtful collection of recipes from home cooks and curious kitchens around Pakistan.</p>
+            <a href="#discover" className="mt-8 inline-flex h-12 items-center rounded-full bg-[#e08358] px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#d1744b]">Explore recipes</a>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   const activeRecipe = recipes[activeIndex]
-  const activeRecipeHref = activeRecipe.source === 'mealdb' ? `/recipes/mealdb/${activeRecipe.id}` : `/recipes/${activeRecipe.id}`
+  const activeRecipeHref = `/recipes/${activeRecipe.id}`
   const move = (direction: number) => setActiveIndex((index) => (index + direction + recipes.length) % recipes.length)
 
   return (
@@ -58,7 +70,7 @@ export function RecipeCarousel({ recipes }: RecipeCarouselProps) {
         <div key={activeRecipe.id} className="max-w-[760px] animate-[hero-fade-in_450ms_ease-out] motion-reduce:animate-none">
           <p className="mb-6 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[#f0b27e]"><span className="h-px w-7 bg-[#f0b27e]" /> Cook with intention</p>
           <h1 className="font-serif text-[54px] leading-[0.96] tracking-[-0.045em] sm:text-[72px] lg:text-[82px]">Good food is<br /><em className="font-normal text-[#efad80]">meant to be shared.</em></h1>
-          <p className="mt-6 max-w-[500px] text-[15px] leading-7 text-white/80 sm:text-base">A thoughtful collection of recipes from home cooks, food lovers, and curious kitchens around the world.</p>
+          <p className="mt-6 max-w-[500px] text-[15px] leading-7 text-white/80 sm:text-base">Discover recipes shared by cooks across Pakistan, from everyday meals to regional favourites.</p>
           <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
             <Link href={activeRecipeHref} className="inline-flex h-12 items-center gap-3 rounded-full bg-[#e08358] px-5 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-[#d1744b]">Explore the latest <ArrowUpRight size={17} /></Link>
             <div className="border-l border-white/35 pl-4"><p className="text-[9px] font-bold uppercase tracking-[0.16em] text-white/65">On the table now</p><Link href={activeRecipeHref} className="mt-1 block max-w-[250px] truncate font-serif text-[17px] text-white hover:text-[#f5c9a8]">{activeRecipe.title}</Link></div>

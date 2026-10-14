@@ -6,11 +6,28 @@ import { useParams } from 'next/navigation'
 import { ArrowLeft, ArrowUpRight, ChefHat, Clock3, CookingPot, Users, Video } from 'lucide-react'
 import { RecipeCommunityPanel } from '../../../components/recipe-community-panel'
 import { SiteHeader } from '../../../components/site-header'
-import { getRecipeAverageRating } from '../../../lib/recipe-api'
-import { recipes, type RecipeDetailData } from '../../../lib/recipe-data'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api'
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '')
+
+type RecipeDetailData = {
+  id: string
+  title: string
+  author: string
+  time: string
+  rating: string
+  category: string
+  diet: string
+  image: string
+  color: string
+  description: string
+  prepTime: number
+  cookTime: number
+  servings: number
+  ingredients: string[]
+  instructions: string[]
+  videoUrl?: string
+}
 
 type ApiRecipe = {
   _id: string
@@ -37,33 +54,12 @@ function formatRating(value: number | string | null | undefined): string {
 
 export default function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const localRecipe = recipes.find((recipe) => recipe.id === id)
-  const [recipe, setRecipe] = useState<RecipeDetailData | null>(localRecipe ?? null)
-  const [loading, setLoading] = useState(!localRecipe)
+  const [recipe, setRecipe] = useState<RecipeDetailData | null>(null)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let active = true
-
-    const featuredRecipe = recipes.find((item) => item.id === id)
-    if (featuredRecipe) {
-      void getRecipeAverageRating(id).then((average) => {
-        if (!active) return
-        setRecipe({
-          ...featuredRecipe,
-          rating: average > 0 ? average.toFixed(1) : '0',
-        })
-        setLoading(false)
-      }).catch(() => {
-        if (active) {
-          setRecipe({ ...featuredRecipe, rating: '0' })
-          setLoading(false)
-        }
-      })
-
-      return () => { active = false }
-    }
-
     setRecipe(null)
     setLoading(true)
     setError('')

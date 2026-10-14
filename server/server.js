@@ -7,7 +7,6 @@ const multer = require('multer')
 const mongoose = require('mongoose')
 const connectDatabase = require('./config/database')
 const communityRoutes = require('./routes/communityRoutes')
-const mealRoutes = require('./routes/mealRoutes')
 const recipeRoutes = require('./routes/recipeRoutes')
 const recipeFeedbackRoutes = require('./routes/recipeFeedbackRoutes')
 const requireDatabase = require('./middleware/requireDatabase')
@@ -70,7 +69,6 @@ app.use(cors({
 }))
 app.use(express.json({ limit: '1mb' }))
 app.use('/uploads', express.static(uploadDirectory))
-app.use('/api/meals', mealRoutes)
 app.use('/api/recipes', requireDatabase, recipeFeedbackRoutes)
 
 app.get('/api/health', (_request, response) => {

@@ -2,7 +2,6 @@ import type { RecipeCardData } from '../components/recipe-card'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api'
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '')
-const MEAL_CACHE_KEY = 'recipeShare.themealdb.meals.v2'
 
 type ApiRecipeCard = {
   _id: string
@@ -12,6 +11,8 @@ type ApiRecipeCard = {
   cookTime: number
   category: string
   diet: string
+  ingredients: string[]
+  description: string
   imagePath: string
   rating?: number
 }
@@ -22,49 +23,12 @@ function formatRating(value: number | string | null | undefined): string {
   return numericValue > 0 ? numericValue.toFixed(1) : '0'
 }
 
-export async function getRecipeAverageRating(recipeId: string): Promise<number> {
-  try {
-    const response = await fetch(`${API_BASE_URL}/recipes/${encodeURIComponent(recipeId)}/feedback`)
-    if (!response.ok) return 0
-    const result = await response.json() as { summary?: { average?: number | null } }
-    return typeof result?.summary?.average === 'number' ? result.summary.average : 0
-  } catch {
-    return 0
-  }
-}
-
-export async function hydrateRecipeRatings<T extends { id: string; rating?: string | number }>(items: T[]): Promise<T[]> {
-  const hydratedItems = await Promise.all(items.map(async (item) => {
-    const average = await getRecipeAverageRating(item.id)
-    return { ...item, rating: formatRating(average) } as T
-  }))
-
-  return hydratedItems
-}
-
 export async function getSharedRecipeCards(): Promise<RecipeCardData[]> {
   const response = await fetch(`${API_BASE_URL}/recipes`)
   if (!response.ok) throw new Error('Shared recipes are temporarily unavailable.')
 
   const result = await response.json() as { recipes: ApiRecipeCard[] }
-  const recipes = await Promise.all(result.recipes.map(async (recipe) => {
-    const listRating = typeof recipe.rating === 'number' ? recipe.rating : null
-
-    if (listRating !== null && listRating >= 0) {
-      return { ...recipe, rating: listRating }
-    }
-
-    try {
-      const feedbackResponse = await fetch(`${API_BASE_URL}/recipes/${encodeURIComponent(recipe._id)}/feedback`)
-      if (!feedbackResponse.ok) return { ...recipe, rating: 0 }
-      const feedback = await feedbackResponse.json() as { summary?: { average?: number | null } }
-      return { ...recipe, rating: typeof feedback?.summary?.average === 'number' ? feedback.summary.average : 0 }
-    } catch {
-      return { ...recipe, rating: 0 }
-    }
-  }))
-
-  return recipes.map((recipe) => ({
+  return result.recipes.map((recipe) => ({
     id: recipe._id,
     title: recipe.name,
     author: recipe.sharedBy,
@@ -72,124 +36,10 @@ export async function getSharedRecipeCards(): Promise<RecipeCardData[]> {
     rating: formatRating(recipe.rating ?? 0),
     category: recipe.category,
     diet: recipe.diet === 'Everything' ? 'All diets' : recipe.diet,
+    ingredients: recipe.ingredients,
+    description: recipe.description,
     image: recipe.imagePath.startsWith('http') ? recipe.imagePath : `${SERVER_BASE_URL}${recipe.imagePath}`,
     color: 'bg-[#dbe8c9]',
-  }))
-}
-
-export type MealDbMeal = {
-  id: string
-  title: string
-  image: string
-  category: string
-  area: string
-  ingredients: Array<{ name: string; measure: string }>
-  instructions: string[]
-  tags: string[]
-  youtube: string
-  source: string
-}
-
-export type MealDbCategory = {
-  name: string
-  image: string
-  description: string
-}
-
-async function mealRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}/meals/${path}`)
-  const result = await response.json()
-  if (!response.ok) throw new Error(result.message ?? 'TheMealDB request failed.')
-  return result as T
-}
-
-function cacheMeals(meals: MealDbMeal[]) {
-  if (typeof window !== 'undefined') {
-    try {
-      const cache = JSON.parse(sessionStorage.getItem(MEAL_CACHE_KEY) || '{}') as Record<string, MealDbMeal>
-      for (const meal of meals) {
-        if (meal.instructions.length && meal.ingredients.length) cache[meal.id] = meal
-      }
-      const recentEntries = Object.entries(cache).slice(-50)
-      sessionStorage.setItem(MEAL_CACHE_KEY, JSON.stringify(Object.fromEntries(recentEntries)))
-    } catch {
-      return
-    }
-  }
-}
-
-export async function searchMeals(search: string): Promise<MealDbMeal[]> {
-  const result = await mealRequest<{ meals: MealDbMeal[] }>(`search?search=${encodeURIComponent(search)}`)
-  cacheMeals(result.meals || [])
-  return result.meals || []
-}
-
-export async function getMealsByLetter(letter: string): Promise<MealDbMeal[]> {
-  const result = await mealRequest<{ meals: MealDbMeal[] }>(`letter/${encodeURIComponent(letter)}`)
-  cacheMeals(result.meals || [])
-  return result.meals || []
-}
-
-export async function getMealsByCategory(category: string): Promise<MealDbMeal[]> {
-  const result = await mealRequest<{ meals: MealDbMeal[] }>(`category?name=${encodeURIComponent(category)}`)
-  return result.meals || []
-}
-
-export async function getMealsByArea(area: string): Promise<MealDbMeal[]> {
-  const result = await mealRequest<{ meals: MealDbMeal[] }>(`area?name=${encodeURIComponent(area)}`)
-  return result.meals || []
-}
-
-export async function getMealsByIngredient(ingredient: string): Promise<MealDbMeal[]> {
-  const result = await mealRequest<{ meals: MealDbMeal[] }>(`ingredient?name=${encodeURIComponent(ingredient)}`)
-  return result.meals || []
-}
-
-export async function getMealList(type: 'areas' | 'ingredients'): Promise<string[]> {
-  const result = await mealRequest<{ items: string[] }>(`lists/${type}`)
-  return [...new Map((result.items || []).filter(Boolean).map((item) => [item.trim().toLocaleLowerCase(), item.trim()])).values()]
-}
-
-export async function getMealCategories(): Promise<MealDbCategory[]> {
-  const result = await mealRequest<{ categories: MealDbCategory[] }>('categories')
-  return [...new Map((result.categories || []).filter((category) => category.name).map((category) => [category.name.trim().toLocaleLowerCase(), category])).values()]
-}
-
-export async function getRandomMeal(): Promise<MealDbMeal> {
-  const result = await mealRequest<{ meal: MealDbMeal }>('random')
-  cacheMeals([result.meal])
-  return result.meal
-}
-
-export async function getMealById(id: string): Promise<MealDbMeal> {
-  const result = await mealRequest<{ meal: MealDbMeal }>(encodeURIComponent(id))
-  cacheMeals([result.meal])
-  return result.meal
-}
-
-export function getCachedMeal(id: string): MealDbMeal | null {
-  if (typeof window === 'undefined') return null
-  try {
-    const cache = JSON.parse(sessionStorage.getItem(MEAL_CACHE_KEY) || '{}') as Record<string, MealDbMeal>
-    return cache[id] ?? null
-  } catch {
-    return null
-  }
-}
-
-export function toMealCards(meals: MealDbMeal[]): RecipeCardData[] {
-  return meals.map((meal) => ({
-    id: meal.id,
-    title: meal.title,
-    author: meal.area || 'TheMealDB',
-    time: '',
-    rating: '',
-    category: meal.category || 'Meal',
-    diet: '',
-    image: meal.image,
-    color: 'bg-[#e8eddf]',
-    source: 'mealdb',
-    detail: [meal.area, meal.category].filter(Boolean).join(' · ') || 'Open recipe',
   }))
 }
 
