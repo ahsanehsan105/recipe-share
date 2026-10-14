@@ -17,30 +17,62 @@ type ApiRecipeCard = {
   rating?: number
 }
 
+export type RecipeListFilters = {
+  page?: number
+  limit?: number
+  search?: string
+  category?: string
+  area?: string
+  ingredient?: string
+  letter?: string
+}
+
+export type RecipeListPage = {
+  recipes: RecipeCardData[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    hasMore: boolean
+  }
+}
+
 function formatRating(value: number | string | null | undefined): string {
   const numericValue = Number(value)
   if (!Number.isFinite(numericValue)) return '0'
   return numericValue > 0 ? numericValue.toFixed(1) : '0'
 }
 
-export async function getSharedRecipeCards(): Promise<RecipeCardData[]> {
-  const response = await fetch(`${API_BASE_URL}/recipes`)
+export async function getSharedRecipeCards(filters: RecipeListFilters = {}): Promise<RecipeListPage> {
+  const params = new URLSearchParams({
+    page: String(filters.page ?? 1),
+    limit: String(filters.limit ?? 15),
+  })
+  for (const key of ['search', 'category', 'area', 'ingredient', 'letter'] as const) {
+    const value = filters[key]?.trim()
+    if (value) params.set(key, value)
+  }
+
+  const response = await fetch(`${API_BASE_URL}/recipes?${params}`)
   if (!response.ok) throw new Error('Shared recipes are temporarily unavailable.')
 
-  const result = await response.json() as { recipes: ApiRecipeCard[] }
-  return result.recipes.map((recipe) => ({
-    id: recipe._id,
-    title: recipe.name,
-    author: recipe.sharedBy,
-    time: `${recipe.prepTime + recipe.cookTime} min`,
-    rating: formatRating(recipe.rating ?? 0),
-    category: recipe.category,
-    diet: recipe.diet === 'Everything' ? 'All diets' : recipe.diet,
-    ingredients: recipe.ingredients,
-    description: recipe.description,
-    image: recipe.imagePath.startsWith('http') ? recipe.imagePath : `${SERVER_BASE_URL}${recipe.imagePath}`,
-    color: 'bg-[#dbe8c9]',
-  }))
+  const result = await response.json() as { recipes: ApiRecipeCard[]; pagination: RecipeListPage['pagination'] }
+  return {
+    recipes: result.recipes.map((recipe) => ({
+      id: recipe._id,
+      title: recipe.name,
+      author: recipe.sharedBy,
+      time: `${recipe.prepTime + recipe.cookTime} min`,
+      rating: formatRating(recipe.rating ?? 0),
+      category: recipe.category,
+      diet: recipe.diet === 'Everything' ? 'All diets' : recipe.diet,
+      ingredients: recipe.ingredients,
+      description: recipe.description,
+      image: recipe.imagePath.startsWith('http') ? recipe.imagePath : `${SERVER_BASE_URL}${recipe.imagePath}`,
+      color: 'bg-[#dbe8c9]',
+    })),
+    pagination: result.pagination,
+  }
 }
 
 export type RecipeRating = {

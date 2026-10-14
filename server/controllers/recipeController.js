@@ -80,7 +80,36 @@ async function getRecipeImage(request, response, next) {
 
 async function getRecipes(_request, response, next) {
   try {
-    const recipes = await Recipe.find().select('-email').sort({ createdAt: -1 }).lean()
+    const page = Math.max(1, Number.parseInt(_request.query.page, 10) || 1)
+    const limit = Math.min(50, Math.max(1, Number.parseInt(_request.query.limit, 10) || 15))
+    const conditions = []
+    const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const search = String(_request.query.search || '').trim()
+    const category = String(_request.query.category || '').trim()
+    const area = String(_request.query.area || '').trim()
+    const ingredient = String(_request.query.ingredient || '').trim()
+    const letter = String(_request.query.letter || '').trim()
+
+    if (search) {
+      const searchPattern = new RegExp(escapeRegex(search), 'i')
+      conditions.push({ $or: [{ name: searchPattern }, { sharedBy: searchPattern }, { category: searchPattern }] })
+    }
+    if (category) conditions.push({ category })
+    if (area) {
+      const areaPattern = new RegExp(escapeRegex(area), 'i')
+      conditions.push({ $or: [{ name: areaPattern }, { category: areaPattern }, { description: areaPattern }] })
+    }
+    if (ingredient) conditions.push({ ingredients: new RegExp(escapeRegex(ingredient), 'i') })
+    if (/^[a-z]$/i.test(letter)) conditions.push({ name: new RegExp(`^${letter}`, 'i') })
+
+    const filter = conditions.length ? { $and: conditions } : {}
+    const total = await Recipe.countDocuments(filter)
+    const recipes = await Recipe.find(filter)
+      .select('-email')
+      .sort({ createdAt: -1, _id: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean()
     const recipeIds = recipes.map((recipe) => recipe._id.toString())
     const ratingsByRecipeId = await getRecipeRatingsById(recipeIds)
 
@@ -89,7 +118,10 @@ async function getRecipes(_request, response, next) {
       rating: ratingsByRecipeId[recipe._id.toString()] ?? 0,
     }))
 
-    return response.json({ recipes: recipesWithRatings })
+    return response.json({
+      recipes: recipesWithRatings,
+      pagination: { page, limit, total, hasMore: page * limit < total },
+    })
   } catch (error) {
     return next(error)
   }

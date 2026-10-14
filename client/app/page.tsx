@@ -15,7 +15,7 @@ export default function Page() {
 
   useEffect(() => {
     let active = true
-    getSharedRecipeCards().then((items) => { if (active) setCommunityRecipes(items) }).catch(() => {})
+    getSharedRecipeCards({ limit: 5 }).then((result) => { if (active) setCommunityRecipes(result.recipes) }).catch(() => {})
 
     return () => { active = false }
   }, [])

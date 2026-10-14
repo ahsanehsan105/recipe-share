@@ -9,7 +9,8 @@ import { useSavedRecipes } from '../../lib/use-saved-recipes'
 
 const letters = 'abcdefghijklmnopqrstuvwxyz'.split('')
 const regions = ['Punjab', 'Sindh', 'KPK', 'Balochistan', 'Gilgit-Baltistan', 'Azad Kashmir']
-const PAGE_SIZE = 36
+const PAGE_SIZE = 15
+const categories = ['Breakfast', 'Breakfast / Lunch', 'Lunch', 'Dinner', 'Dessert', 'Snacks', 'Main Course']
 
 export default function CollectionsPage() {
   const { saved, toggleSaved } = useSavedRecipes()
@@ -19,40 +20,41 @@ export default function CollectionsPage() {
   const [selectedArea, setSelectedArea] = useState('')
   const [ingredientFilter, setIngredientFilter] = useState('')
   const [selectedLetter, setSelectedLetter] = useState('')
-  const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE)
+  const [page, setPage] = useState(1)
+  const [totalRecipes, setTotalRecipes] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     let active = true
-    getSharedRecipeCards()
-      .then((items) => { if (active) setRecipes(items) })
+    setLoading(true)
+    setLoadError('')
+    const timer = window.setTimeout(() => {
+      getSharedRecipeCards({
+        page: 1,
+        limit: PAGE_SIZE,
+        search: query,
+        category: selectedCategory,
+        area: selectedArea,
+        ingredient: ingredientFilter,
+        letter: selectedLetter,
+      })
+      .then((result) => {
+        if (!active) return
+        setRecipes(result.recipes)
+        setPage(1)
+        setTotalRecipes(result.pagination.total)
+        setHasMore(result.pagination.hasMore)
+      })
       .catch((error: unknown) => { if (active) setLoadError(error instanceof Error ? error.message : 'Recipes are unavailable.') })
       .finally(() => { if (active) setLoading(false) })
-    return () => { active = false }
-  }, [])
-
-  const categories = useMemo(() => [...new Set(recipes.map((recipe) => recipe.category))].sort(), [recipes])
-  const filteredRecipes = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase()
-    const normalizedIngredient = ingredientFilter.trim().toLowerCase()
-
-    return recipes.filter((recipe) => {
-      const matchesQuery = !normalizedQuery || `${recipe.title} ${recipe.author} ${recipe.category}`.toLowerCase().includes(normalizedQuery)
-      const matchesCategory = !selectedCategory || recipe.category === selectedCategory
-      const matchesArea = !selectedArea || `${recipe.title} ${recipe.category} ${recipe.description ?? ''}`.toLowerCase().includes(selectedArea.toLowerCase())
-      const matchesIngredient = !normalizedIngredient || recipe.ingredients?.some((ingredient) => ingredient.toLowerCase().includes(normalizedIngredient))
-      const matchesLetter = !selectedLetter || recipe.title.trim().toLowerCase().startsWith(selectedLetter)
-
-      return matchesQuery && matchesCategory && matchesArea && matchesIngredient && matchesLetter
-    })
-  }, [recipes, query, selectedCategory, selectedArea, ingredientFilter, selectedLetter])
-  const visibleRecipes = filteredRecipes.slice(0, visibleLimit)
-  const hasActiveFilters = Boolean(query || selectedCategory || selectedArea || ingredientFilter || selectedLetter)
-
-  useEffect(() => {
-    setVisibleLimit(PAGE_SIZE)
+    }, 200)
+    return () => { active = false; window.clearTimeout(timer) }
   }, [query, selectedCategory, selectedArea, ingredientFilter, selectedLetter])
+
+  const hasActiveFilters = Boolean(query || selectedCategory || selectedArea || ingredientFilter || selectedLetter)
 
   function clearFilters() {
     setQuery('')
@@ -62,9 +64,35 @@ export default function CollectionsPage() {
     setSelectedLetter('')
   }
 
+  async function showMoreRecipes() {
+    if (!hasMore || loadingMore) return
+    const nextPage = page + 1
+    setLoadingMore(true)
+    setLoadError('')
+    try {
+      const result = await getSharedRecipeCards({
+        page: nextPage,
+        limit: PAGE_SIZE,
+        search: query,
+        category: selectedCategory,
+        area: selectedArea,
+        ingredient: ingredientFilter,
+        letter: selectedLetter,
+      })
+      setRecipes((current) => [...current, ...result.recipes])
+      setPage(nextPage)
+      setTotalRecipes(result.pagination.total)
+      setHasMore(result.pagination.hasMore)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'More recipes could not be loaded.')
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
   return (
     <main className="min-h-screen bg-[#f8f6f1] text-[#23352d]">
-      <SiteHeader onRecipeCreated={(recipe) => setRecipes((current) => [recipe, ...current])} />
+      <SiteHeader onRecipeCreated={(recipe) => { setRecipes((current) => [recipe, ...current]); setTotalRecipes((current) => current + 1) }} />
       <section className="border-b border-[#dfe3dc] bg-[#fbfaf7]">
         <div className="mx-auto max-w-[1240px] px-5 pb-9 pt-12 lg:px-8 lg:pb-12 lg:pt-16">
           <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b76e43]"><span className="h-px w-7 bg-[#b76e43]" />From Pakistani kitchens</p>
@@ -76,7 +104,7 @@ export default function CollectionsPage() {
 
       <section className="mx-auto max-w-[1240px] px-5 py-9 lg:px-8 lg:py-12">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-[#819087]"><strong className="font-semibold text-[#40564a]">{filteredRecipes.length}</strong> recipes to explore</p>
+          <p className="text-sm text-[#819087]"><strong className="font-semibold text-[#40564a]">{totalRecipes}</strong> recipes to explore</p>
           {hasActiveFilters && <button type="button" onClick={clearFilters} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-[#64736a] transition hover:bg-[#e9eee3] hover:text-[#294337]"><X size={14} /> Clear filters</button>}
         </div>
 
@@ -94,8 +122,8 @@ export default function CollectionsPage() {
 
         {loading && <p className="mb-4 text-sm text-[#819087]">Loading recipes…</p>}
         {loadError && <p role="alert" className="mb-4 text-sm text-[#9b4e34]">{loadError}</p>}
-        {visibleRecipes.length ? <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{visibleRecipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} saved={saved.includes(recipe.id)} onToggleSaved={() => toggleSaved(recipe.id)} />)}</div> : !loading && !loadError && <div className="rounded-xl border border-dashed border-[#ccd8c9] py-16 text-center text-sm text-[#718078]">No recipes match your search.</div>}
-        {visibleLimit < filteredRecipes.length && <div className="mt-8 flex justify-center"><button type="button" onClick={() => setVisibleLimit((current) => current + PAGE_SIZE)} className="h-11 rounded-lg border border-[#cbd7c5] bg-[#fbfaf7] px-5 text-sm font-semibold text-[#40564a] transition hover:border-[#91a887] hover:bg-white">Load more recipes</button></div>}
+        {recipes.length ? <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{recipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} saved={saved.includes(recipe.id)} onToggleSaved={() => toggleSaved(recipe.id)} />)}</div> : !loading && !loadError && <div className="rounded-xl border border-dashed border-[#ccd8c9] py-16 text-center text-sm text-[#718078]">No recipes match your search.</div>}
+        {hasMore && <div className="mt-8 flex justify-center"><button type="button" onClick={showMoreRecipes} disabled={loadingMore} className="h-11 rounded-lg border border-[#cbd7c5] bg-[#fbfaf7] px-5 text-sm font-semibold text-[#40564a] transition hover:border-[#91a887] hover:bg-white disabled:cursor-wait disabled:opacity-60">{loadingMore ? 'Loading recipes…' : 'Show more'}</button></div>}
       </section>
     </main>
   )
