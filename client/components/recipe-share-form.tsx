@@ -1,11 +1,10 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { Camera, ChefHat, Clock3, ImagePlus, LoaderCircle, Plus, Users, Video, X } from 'lucide-react'
+import { ChefHat, Clock3, ImagePlus, LoaderCircle, Plus, Users, Video, X } from 'lucide-react'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000/api'
 const SERVER_BASE_URL = API_BASE_URL.replace(/\/api\/?$/, '')
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024
 
 export type SharedRecipeCard = {
   id: string
@@ -29,8 +28,7 @@ const categories = ['Breakfast', 'Lunch', 'Dinner', 'Dessert', 'Snack', 'Snacks'
 const diets = ['Everything', 'Vegetarian', 'Vegan', 'Gluten-free', 'Dairy-free']
 
 export function RecipeShareForm({ onClose, onCreated, onSuccess }: RecipeShareFormProps) {
-  const [image, setImage] = useState<File | null>(null)
-  const [preview, setPreview] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [recipeName, setRecipeName] = useState('')
@@ -42,11 +40,6 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess }: RecipeShareFo
   const [cookTime, setCookTime] = useState('30')
 
   useEffect(() => {
-    if (!preview) return
-    return () => URL.revokeObjectURL(preview)
-  }, [preview])
-
-  useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === 'Escape' && !submitting) onClose()
     }
@@ -54,29 +47,20 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess }: RecipeShareFo
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [onClose, submitting])
 
-  function chooseImage(file?: File) {
-    if (!file) return
-    if (file.size > MAX_IMAGE_SIZE) {
-      setError('Choose an image that is 2 MB or smaller.')
-      setImage(null)
-      setPreview('')
-      return
-    }
-    setError('')
-    setImage(file)
-    setPreview(URL.createObjectURL(file))
-  }
-
   async function submitRecipe(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError('')
     setSubmitting(true)
 
     const formData = new FormData(event.currentTarget)
-    if (image) formData.set('image', image)
+    const recipeData = Object.fromEntries(formData.entries())
 
     try {
-      const response = await fetch(`${API_BASE_URL}/recipes`, { method: 'POST', body: formData })
+      const response = await fetch(`${API_BASE_URL}/recipes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(recipeData),
+      })
       const result = await response.json()
       if (!response.ok) throw new Error(result.message ?? 'We could not share your recipe. Please try again.')
 
@@ -126,11 +110,14 @@ export function RecipeShareForm({ onClose, onCreated, onSuccess }: RecipeShareFo
               </div>
             </div>
 
-            <label className="group relative flex min-h-[190px] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#b8c6b5] bg-[#f1f3ed] text-center transition hover:border-[#7e9977] hover:bg-[#ebf0e6]">
-              {preview ? <img src={preview} alt="Recipe preview" className="absolute inset-0 size-full object-cover" /> : <><span className="mb-3 grid size-11 place-items-center rounded-full bg-white text-[#6e8665] shadow-sm"><ImagePlus size={20} /></span><span className="text-[12px] font-semibold text-[#52635a]">Add a recipe photo</span><span className="mt-1 text-[11px] text-[#8b9a8b]">JPG, PNG or WebP · up to 2 MB</span></>}
-              <input name="image" type="file" accept="image/jpeg,image/png,image/webp" required className="sr-only" onChange={(event) => chooseImage(event.target.files?.[0])} />
-              {preview && <span className="absolute bottom-2 right-2 grid size-9 place-items-center rounded-full bg-[#fbfaf7]/90 text-[#52635a] shadow"><Camera size={17} /></span>}
-            </label>
+            <div className="space-y-3">
+              <label className="block text-[12px] font-semibold text-[#52635a]">Recipe image URL <span className="text-[#c8754c]">*</span><input name="imageUrl" type="url" required maxLength={2048} pattern="https?://.+" value={imageUrl} onChange={(event) => setImageUrl(event.target.value)} placeholder="https://example.com/recipe-photo.jpg" className="mt-2 h-11 w-full rounded-lg border border-[#dce2d8] bg-white px-3.5 text-sm font-normal text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
+              <div className="relative flex min-h-[130px] items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#b8c6b5] bg-[#f1f3ed] text-center">
+                {imageUrl
+                  ? <img src={imageUrl} alt="Recipe preview" className="absolute inset-0 size-full object-cover" />
+                  : <span className="flex flex-col items-center text-[11px] text-[#8b9a8b]"><ImagePlus size={20} className="mb-2 text-[#6e8665]" />Paste a publicly accessible image URL</span>}
+              </div>
+            </div>
           </div>
 
           <label className="block text-[12px] font-semibold text-[#52635a]">Recipe video link <span className="font-normal text-[#8b9a8b]">(optional)</span><input name="videoUrl" type="url" maxLength={2048} pattern="https?://.+" placeholder="https://youtube.com/watch?v=..." className="mt-2 h-11 w-full rounded-lg border border-[#dce2d8] bg-white px-3.5 text-sm font-normal text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /><span className="mt-1.5 flex items-center gap-1.5 text-[11px] font-normal text-[#8b9a8b]"><Video size={13} /> Add a YouTube, Vimeo, or other https video URL.</span></label>

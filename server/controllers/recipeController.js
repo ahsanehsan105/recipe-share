@@ -5,6 +5,15 @@ function splitLines(value) {
   return String(value || '').split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
 }
 
+function isHttpUrl(value) {
+  try {
+    const url = new URL(value)
+    return (url.protocol === 'http:' || url.protocol === 'https:') && value.length <= 2048
+  } catch {
+    return false
+  }
+}
+
 async function getRecipeRatingsById(recipeIds) {
   if (!recipeIds.length) return {}
 
@@ -18,9 +27,8 @@ async function getRecipeRatingsById(recipeIds) {
 
 async function createRecipe(request, response, next) {
   try {
-    if (!request.file) {
-      return response.status(400).json({ message: 'A recipe image is required.' })
-    }
+    const imageUrl = String(request.body.imageUrl || '').trim()
+    if (!isHttpUrl(imageUrl)) return response.status(400).json({ message: 'Enter a valid http or https recipe image URL.' })
 
     const recipe = new Recipe({
       name: request.body.name,
@@ -34,12 +42,9 @@ async function createRecipe(request, response, next) {
       prepTime: Number(request.body.prepTime),
       cookTime: Number(request.body.cookTime),
       servings: Number(request.body.servings),
-      imagePath: 'pending',
-      imageData: request.file?.buffer,
-      imageMimeType: request.file?.mimetype,
+      imagePath: imageUrl,
       videoUrl: request.body.videoUrl?.trim() || undefined,
     })
-    if (request.file) recipe.imagePath = `/api/recipes/${recipe._id}/image`
     await recipe.save()
 
     const { email, ...publicRecipe } = recipe.toObject()
@@ -72,6 +77,25 @@ async function getRecipeImage(request, response, next) {
     response.set('Cache-Control', 'public, max-age=3600, immutable')
     response.set('X-Content-Type-Options', 'nosniff')
     return response.send(imageData)
+  } catch (error) {
+    if (error.name === 'CastError') return response.status(400).json({ message: 'Invalid recipe ID.' })
+    return next(error)
+  }
+}
+
+async function updateRecipeImage(request, response, next) {
+  try {
+    const imageUrl = String(request.body.imageUrl || '').trim()
+    if (!isHttpUrl(imageUrl)) return response.status(400).json({ message: 'Enter a valid http or https image URL.' })
+
+    const recipe = await Recipe.findByIdAndUpdate(
+      request.params.id,
+      { $set: { imagePath: imageUrl }, $unset: { imageData: 1, imageMimeType: 1 } },
+      { new: true, runValidators: true },
+    ).select('_id imagePath')
+
+    if (!recipe) return response.status(404).json({ message: 'Recipe not found.' })
+    return response.json({ recipe: { _id: recipe._id, imagePath: recipe.imagePath } })
   } catch (error) {
     if (error.name === 'CastError') return response.status(400).json({ message: 'Invalid recipe ID.' })
     return next(error)
@@ -142,4 +166,4 @@ async function getRecipeById(request, response, next) {
   }
 }
 
-module.exports = { createRecipe, getRecipeById, getRecipeImage, getRecipes }
+module.exports = { createRecipe, getRecipeById, getRecipeImage, getRecipes, updateRecipeImage }

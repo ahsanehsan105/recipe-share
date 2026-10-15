@@ -43,6 +43,10 @@ function formatRating(value: number | string | null | undefined): string {
   return numericValue > 0 ? numericValue.toFixed(1) : '0'
 }
 
+export function getRecipeImageUrl(imagePath: string): string {
+  return imagePath.startsWith('http') ? imagePath : `${SERVER_BASE_URL}${imagePath}`
+}
+
 export async function getSharedRecipeCards(filters: RecipeListFilters = {}): Promise<RecipeListPage> {
   const params = new URLSearchParams({
     page: String(filters.page ?? 1),
@@ -73,6 +77,26 @@ export async function getSharedRecipeCards(filters: RecipeListFilters = {}): Pro
     })),
     pagination: result.pagination,
   }
+}
+
+export async function updateRecipeImage(recipeId: string, imageUrl: string, adminKey: string): Promise<string> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${encodeURIComponent(recipeId)}/image`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'x-recipe-image-admin-key': adminKey },
+    body: JSON.stringify({ imageUrl }),
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.message ?? 'Could not update the recipe image.')
+  return getRecipeImageUrl(result.recipe.imagePath as string)
+}
+
+export async function verifyRecipeImageAdminKey(adminKey: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/recipes/admin/image-access`, {
+    method: 'POST',
+    headers: { 'x-recipe-image-admin-key': adminKey },
+  })
+  const result = await response.json()
+  if (!response.ok) throw new Error(result.message ?? 'Admin authorization failed.')
 }
 
 export type RecipeRating = {
