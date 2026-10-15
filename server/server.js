@@ -10,6 +10,7 @@ const communityRoutes = require('./routes/communityRoutes')
 const recipeRoutes = require('./routes/recipeRoutes')
 const recipeFeedbackRoutes = require('./routes/recipeFeedbackRoutes')
 const requireDatabase = require('./middleware/requireDatabase')
+const requireRecipeImageAdmin = require('./middleware/requireRecipeImageAdmin')
 
 dotenv.config({ path: path.join(__dirname, '.env') })
 
@@ -68,6 +69,9 @@ app.use(cors({
   credentials: true,
 }))
 app.use(express.json({ limit: '1mb' }))
+app.post('/api/recipes/admin/image-access', requireRecipeImageAdmin, (_request, response) => {
+  response.json({ authorized: true })
+})
 app.use('/uploads', express.static(uploadDirectory))
 app.use('/api/recipes', requireDatabase, recipeFeedbackRoutes)
 

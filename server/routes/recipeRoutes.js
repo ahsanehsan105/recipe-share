@@ -4,9 +4,6 @@ const requireRecipeImageAdmin = require('../middleware/requireRecipeImageAdmin')
 
 const router = express.Router()
 
-router.post('/admin/image-access', requireRecipeImageAdmin, (_request, response) => {
-  response.json({ authorized: true })
-})
 router.get('/', getRecipes)
 router.get('/:id/image', getRecipeImage)
 router.patch('/:id/image', requireRecipeImageAdmin, updateRecipeImage)
