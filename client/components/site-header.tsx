@@ -12,7 +12,7 @@ type SiteHeaderProps = {
 }
 
 const navigation = [
-  { label: 'Discover', href: '/#discover' },
+  { label: 'Discover', href: '/' },
   { label: 'Collections', href: '/collections' },
   { label: 'Community', href: '/community' },
 ]
@@ -78,7 +78,7 @@ export function SiteHeader({ onRecipeCreated, variant = 'standard' }: SiteHeader
 
           {!recipeDetail && <nav className="hidden items-center gap-1 md:flex" aria-label="Main navigation">
             {navigation.map((item, index) => {
-              const active = item.href === '/collections' ? pathname === '/collections' : item.href === '/community' ? pathname === '/community' : pathname === '/'
+              const active = pathname === item.href
               const activeStyle = transparent ? 'bg-white/15 text-white' : 'bg-[#e9eee3] text-[#294337]'
               const idleStyle = transparent ? 'text-white/85 hover:bg-white/10 hover:text-white' : 'text-[#64736a] hover:bg-[#f0f2ec] hover:text-[#294337]'
               return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} style={{ animationDelay: `${index * 70}ms` }} className={`site-nav-link rounded-full px-4 py-2 text-[13px] font-semibold transition-colors ${active ? `is-active ${activeStyle}` : idleStyle}`}>{item.label}</Link>
@@ -98,7 +98,7 @@ export function SiteHeader({ onRecipeCreated, variant = 'standard' }: SiteHeader
         <button type="button" onClick={() => setMenuOpen(false)} aria-label="Close navigation menu" className="mobile-menu-backdrop absolute inset-0 bg-[#20352b]/80 backdrop-blur-xl" />
         <nav className="relative z-10 flex w-full max-w-sm flex-col items-stretch" aria-label="Mobile navigation">
           {navigation.map((item, index) => {
-            const active = item.href === '/collections' ? pathname === '/collections' : item.href === '/community' ? pathname === '/community' : pathname === '/'
+            const active = pathname === item.href
             return <Link key={item.href} href={item.href} aria-current={active ? 'page' : undefined} onClick={() => setMenuOpen(false)} style={{ animationDelay: `${index * 90}ms` }} className={`mobile-menu-item border-b border-white/15 py-4 text-center font-serif text-[30px] leading-tight text-white transition-colors hover:text-[#efad80] ${active ? 'text-[#efad80]' : ''}`}>{item.label}</Link>
           })}
           <button type="button" onClick={() => { setShareOpen(true); setMenuOpen(false) }} style={{ animationDelay: `${navigation.length * 90}ms` }} className="mobile-menu-item mt-7 h-12 rounded-full bg-[#e08358] px-6 text-sm font-semibold text-white shadow-lg shadow-black/10 transition hover:bg-[#d1744b]">Share a recipe</button>

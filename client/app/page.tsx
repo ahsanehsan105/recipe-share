@@ -12,10 +12,17 @@ import { ArrowRight, Heart } from 'lucide-react'
 export default function Page() {
   const { saved, toggleSaved } = useSavedRecipes()
   const [communityRecipes, setCommunityRecipes] = useState<RecipeCardData[]>([])
+  const [recipesLoading, setRecipesLoading] = useState(true)
+  const [recipeLoadError, setRecipeLoadError] = useState('')
 
   useEffect(() => {
     let active = true
-    getSharedRecipeCards({ limit: 5 }).then((result) => { if (active) setCommunityRecipes(result.recipes) }).catch(() => {})
+    getSharedRecipeCards({ limit: 5 })
+      .then((result) => { if (active) setCommunityRecipes(result.recipes) })
+      .catch((error: unknown) => {
+        if (active) setRecipeLoadError(error instanceof Error ? error.message : 'Recipes could not be loaded.')
+      })
+      .finally(() => { if (active) setRecipesLoading(false) })
 
     return () => { active = false }
   }, [])
@@ -34,7 +41,7 @@ export default function Page() {
           <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div><p className="mb-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#8b9a8b]">The latest from our kitchen</p><h2 className="font-serif text-4xl tracking-[-0.04em] text-[#294337]">Find your next favorite</h2></div>
           </div>
-          {landingRecipes.length ? <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{landingRecipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} saved={saved.includes(recipe.id)} onToggleSaved={() => toggleSaved(recipe.id)} />)}</div> : <div className="rounded-2xl border border-dashed border-[#ccd8c9] py-14 text-center text-[#718078]">No recipes are available yet.</div>}
+          {landingRecipes.length ? <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{landingRecipes.map((recipe) => <RecipeCard key={recipe.id} recipe={recipe} saved={saved.includes(recipe.id)} onToggleSaved={() => toggleSaved(recipe.id)} />)}</div> : recipesLoading ? <div className="rounded-2xl border border-dashed border-[#ccd8c9] py-14 text-center text-[#718078]">Loading recipes…</div> : recipeLoadError ? <div role="alert" className="rounded-2xl border border-[#e7c7ba] bg-[#fbefea] py-10 text-center text-sm text-[#9b4e34]">{recipeLoadError}</div> : <div className="rounded-2xl border border-dashed border-[#ccd8c9] py-14 text-center text-[#718078]">No recipes are available yet.</div>}
           <div className="mt-8 flex justify-center"><Link href="/collections" className="inline-flex h-11 items-center gap-2 rounded-full border border-[#cbd7c5] bg-[#fbfaf7] px-5 text-sm font-semibold text-[#40564a] transition hover:-translate-y-0.5 hover:border-[#91a887] hover:bg-white">Explore more recipes <ArrowRight size={16} /></Link></div>
         </div>
       </section>
