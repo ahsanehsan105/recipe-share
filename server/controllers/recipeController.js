@@ -102,6 +102,19 @@ async function updateRecipeImage(request, response, next) {
   }
 }
 
+async function deleteRecipe(request, response, next) {
+  try {
+    const recipe = await Recipe.findByIdAndDelete(request.params.id)
+    if (!recipe) return response.status(404).json({ message: 'Recipe not found.' })
+
+    await RecipeFeedback.deleteMany({ recipeId: recipe._id.toString() })
+    return response.status(204).end()
+  } catch (error) {
+    if (error.name === 'CastError') return response.status(400).json({ message: 'Invalid recipe ID.' })
+    return next(error)
+  }
+}
+
 async function getRecipes(_request, response, next) {
   try {
     const page = Math.max(1, Number.parseInt(_request.query.page, 10) || 1)
@@ -166,4 +179,4 @@ async function getRecipeById(request, response, next) {
   }
 }
 
-module.exports = { createRecipe, getRecipeById, getRecipeImage, getRecipes, updateRecipeImage }
+module.exports = { createRecipe, deleteRecipe, getRecipeById, getRecipeImage, getRecipes, updateRecipeImage }

@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState, type FormEvent } from 'react'
-import { ImagePlus, KeyRound, Link2, LoaderCircle, Search, ShieldCheck } from 'lucide-react'
+import { ImagePlus, KeyRound, Link2, LoaderCircle, Search, ShieldCheck, Trash2 } from 'lucide-react'
 import { RecipeCardData } from '../../../components/recipe-card'
 import { SiteHeader } from '../../../components/site-header'
-import { getSharedRecipeCards, updateRecipeImage, verifyRecipeImageAdminKey } from '../../../lib/recipe-api'
+import { deleteSharedRecipe, getSharedRecipeCards, updateRecipeImage, verifyRecipeImageAdminKey } from '../../../lib/recipe-api'
 
 const PAGE_SIZE = 15
 
@@ -30,6 +30,7 @@ export default function RecipeImageAdminPage() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [updatingId, setUpdatingId] = useState('')
+  const [deletingId, setDeletingId] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -100,6 +101,28 @@ export default function RecipeImageAdminPage() {
     }
   }
 
+  async function deleteRecipe(recipe: RecipeCardData) {
+    if (!window.confirm(`Delete "${recipe.title}"? This will also delete its ratings and questions.`)) return
+
+    setError('')
+    setNotice('')
+    setDeletingId(recipe.id)
+    try {
+      await deleteSharedRecipe(recipe.id, adminKey)
+      setRecipes((current) => current.filter((item) => item.id !== recipe.id))
+      setImageUrls((current) => {
+        const next = { ...current }
+        delete next[recipe.id]
+        return next
+      })
+      setNotice(`Deleted ${recipe.title}.`)
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'The recipe could not be deleted.')
+    } finally {
+      setDeletingId('')
+    }
+  }
+
   async function loadMore() {
     if (!hasMore || loadingMore) return
     setLoadingMore(true)
@@ -125,7 +148,7 @@ export default function RecipeImageAdminPage() {
           <form onSubmit={unlockAdminTools} className="w-full max-w-[480px] rounded-2xl border border-[#dfe3dc] bg-[#fbfaf7] p-6 shadow-sm sm:p-8">
             <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b76e43]"><ShieldCheck size={14} /> Admin tools</p>
             <h1 className="font-serif text-3xl text-[#294337]">Enter admin key</h1>
-            <p className="mt-2 text-sm leading-6 text-[#718078]">Verify your access to manage recipe images.</p>
+            <p className="mt-2 text-sm leading-6 text-[#718078]">Verify your access to manage recipes and their images.</p>
             <label className="mt-6 block text-xs font-semibold text-[#52635a]">Admin key<span className="mt-1.5 flex h-11 items-center gap-3 rounded-lg border border-[#dce2d8] bg-white px-3 text-[#819087] focus-within:border-[#91a887] focus-within:ring-2 focus-within:ring-[#dcebd3]"><KeyRound size={16} /><input type="password" required autoComplete="current-password" autoFocus value={adminKey} onChange={(event) => setAdminKey(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-normal text-[#294337] outline-none" /></span></label>
             {error && <p role="alert" className="mt-4 rounded-lg border border-[#e7c7ba] bg-[#fbefea] px-4 py-3 text-sm text-[#9b4e34]">{error}</p>}
             <button type="submit" disabled={!adminKey || verifying} className="mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#294337] px-4 text-sm font-semibold text-white hover:bg-[#3d5949] disabled:cursor-wait disabled:opacity-60">
@@ -138,8 +161,8 @@ export default function RecipeImageAdminPage() {
       <section className="border-b border-[#dfe3dc] bg-[#fbfaf7]">
         <div className="mx-auto max-w-[1240px] px-5 py-10 lg:px-8 lg:py-14">
           <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b76e43]"><ShieldCheck size={14} /> Admin tools</p>
-          <h1 className="font-serif text-4xl text-[#294337] sm:text-5xl">Update recipe photos</h1>
-          <p className="mt-3 max-w-[620px] text-sm leading-6 text-[#718078]">Replace recipe images with a publicly accessible image URL. Recipe text, ingredients, ratings, and other details stay unchanged.</p>
+          <h1 className="font-serif text-4xl text-[#294337] sm:text-5xl">Manage recipes</h1>
+          <p className="mt-3 max-w-[620px] text-sm leading-6 text-[#718078]">Replace recipe images or delete recipes and their ratings and questions.</p>
         </div>
       </section>
 
@@ -160,9 +183,13 @@ export default function RecipeImageAdminPage() {
               <p className="mt-1 text-xs text-[#819087]">{recipe.category} · By {recipe.author}</p>
               <form onSubmit={(event) => replaceImage(event, recipe)} className="mt-3 flex flex-wrap items-center gap-2">
                 <label className="relative min-w-[240px] flex-1"><span className="sr-only">Image URL for {recipe.title}</span><ImagePlus size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8b9a8b]" /><input type="url" required maxLength={2048} pattern="https?://.+" value={imageUrls[recipe.id] ?? ''} onChange={(event) => setImageUrls((current) => ({ ...current, [recipe.id]: event.target.value }))} placeholder="https://example.com/recipe-photo.jpg" className="h-9 w-full rounded-lg border border-[#dce2d8] bg-white pl-9 pr-3 text-xs text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
-                <button type="submit" disabled={!imageUrls[recipe.id]?.trim() || updatingId === recipe.id} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#294337] px-3 text-xs font-semibold text-white hover:bg-[#3d5949] disabled:cursor-not-allowed disabled:opacity-50">
+                <button type="submit" disabled={!imageUrls[recipe.id]?.trim() || updatingId === recipe.id || deletingId === recipe.id} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#294337] px-3 text-xs font-semibold text-white hover:bg-[#3d5949] disabled:cursor-not-allowed disabled:opacity-50">
                   {updatingId === recipe.id ? <LoaderCircle size={14} className="animate-spin" /> : <Link2 size={14} />}
                   {updatingId === recipe.id ? 'Updating…' : 'Update image'}
+                </button>
+                <button type="button" onClick={() => deleteRecipe(recipe)} disabled={updatingId === recipe.id || deletingId === recipe.id} className="inline-flex h-9 items-center gap-2 rounded-lg border border-[#e7c7ba] bg-white px-3 text-xs font-semibold text-[#9b4e34] hover:bg-[#fbefea] disabled:cursor-not-allowed disabled:opacity-50">
+                  {deletingId === recipe.id ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {deletingId === recipe.id ? 'Deleting…' : 'Delete recipe'}
                 </button>
               </form>
             </div>

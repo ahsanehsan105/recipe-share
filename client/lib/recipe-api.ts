@@ -90,6 +90,17 @@ export async function updateRecipeImage(recipeId: string, imageUrl: string, admi
   return getRecipeImageUrl(result.recipe.imagePath as string)
 }
 
+export async function deleteSharedRecipe(recipeId: string, adminKey: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${encodeURIComponent(recipeId)}`, {
+    method: 'DELETE',
+    headers: { 'x-recipe-image-admin-key': adminKey },
+  })
+  if (response.ok) return
+
+  const result = await response.json()
+  throw new Error(result.message ?? 'Could not delete the recipe.')
+}
+
 export async function verifyRecipeImageAdminKey(adminKey: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/recipes/admin/image-access`, {
     method: 'POST',
