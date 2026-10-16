@@ -94,7 +94,7 @@ export default function CollectionsPage() {
         <div className="mx-auto max-w-[1240px] px-5 pb-9 pt-12 lg:px-8 lg:pb-12 lg:pt-16">
           <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b76e43]"><span className="h-px w-7 bg-[#b76e43]" />From Pakistani kitchens</p>
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
-            <div><h1 className="font-serif text-5xl leading-none tracking-[-0.045em] text-[#294337] sm:text-6xl">The recipe collection</h1><p className="mt-4 max-w-[560px] text-[15px] leading-7 text-[#718078]">Search and explore recipes shared by cooks across Pakistan.</p></div>
+            <div><h1 className="font-serif text-5xl leading-none tracking-[-0.045em] text-[#294337] sm:text-6xl">The Recipe Collection</h1><p className="mt-4 max-w-[560px] text-[15px] leading-7 text-[#718078]">Search and explore recipes shared by cooks across Pakistan.</p></div>
           </div>
         </div>
       </section>
