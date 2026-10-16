@@ -24,6 +24,7 @@ export default function RecipeImageAdminPage() {
   const [query, setQuery] = useState('')
   const [search, setSearch] = useState('')
   const [recipes, setRecipes] = useState<RecipeCardData[]>([])
+  const [totalRecipes, setTotalRecipes] = useState(0)
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
@@ -49,6 +50,7 @@ export default function RecipeImageAdminPage() {
       .then((result) => {
         if (!active) return
         setRecipes(result.recipes)
+        setTotalRecipes(result.pagination.total)
         setPage(1)
         setHasMore(result.pagination.hasMore)
       })
@@ -110,6 +112,7 @@ export default function RecipeImageAdminPage() {
     try {
       await deleteSharedRecipe(recipe.id, adminKey)
       setRecipes((current) => current.filter((item) => item.id !== recipe.id))
+      setTotalRecipes((current) => Math.max(0, current - 1))
       setImageUrls((current) => {
         const next = { ...current }
         delete next[recipe.id]
@@ -131,6 +134,7 @@ export default function RecipeImageAdminPage() {
       const nextPage = page + 1
       const result = await getSharedRecipeCards({ page: nextPage, limit: PAGE_SIZE, search })
       setRecipes((current) => [...current, ...result.recipes])
+      setTotalRecipes(result.pagination.total)
       setPage(nextPage)
       setHasMore(result.pagination.hasMore)
     } catch (loadError) {
@@ -167,8 +171,9 @@ export default function RecipeImageAdminPage() {
       </section>
 
       <section className="mx-auto max-w-[1240px] px-5 py-8 lg:px-8">
-        <div className="mb-7 grid gap-4 sm:grid-cols-[minmax(240px,1fr)_minmax(260px,360px)] sm:items-end">
+        <div className="mb-7">
           <label className="relative block"><span className="sr-only">Search recipes to update</span><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b9a8b]" size={17} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a recipe" className="h-11 w-full rounded-lg border border-[#dce2d8] bg-white pl-11 pr-4 text-sm text-[#294337] outline-none placeholder:text-[#a0aaa1] focus:border-[#91a887] focus:ring-2 focus:ring-[#dcebd3]" /></label>
+          <p className="mt-2 text-sm text-[#819087]"><strong className="font-semibold text-[#40564a]">{totalRecipes}</strong> recipes to manage</p>
         </div>
 
         {notice && <p role="status" className="mb-5 rounded-lg border border-[#cbd7c5] bg-[#edf3e8] px-4 py-3 text-sm text-[#40564a]">{notice}</p>}

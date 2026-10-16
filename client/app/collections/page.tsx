@@ -21,7 +21,6 @@ export default function CollectionsPage() {
   const [ingredientFilter, setIngredientFilter] = useState('')
   const [selectedLetter, setSelectedLetter] = useState('')
   const [page, setPage] = useState(1)
-  const [totalRecipes, setTotalRecipes] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -45,7 +44,6 @@ export default function CollectionsPage() {
         if (!active) return
         setRecipes(result.recipes)
         setPage(1)
-        setTotalRecipes(result.pagination.total)
         setHasMore(result.pagination.hasMore)
       })
       .catch((error: unknown) => { if (active) setLoadError(error instanceof Error ? error.message : 'Recipes are unavailable.') })
@@ -81,7 +79,6 @@ export default function CollectionsPage() {
       })
       setRecipes((current) => [...current, ...result.recipes])
       setPage(nextPage)
-      setTotalRecipes(result.pagination.total)
       setHasMore(result.pagination.hasMore)
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'More recipes could not be loaded.')
@@ -92,7 +89,7 @@ export default function CollectionsPage() {
 
   return (
     <main className="min-h-screen bg-[#f8f6f1] text-[#23352d]">
-      <SiteHeader onRecipeCreated={(recipe) => { setRecipes((current) => [recipe, ...current]); setTotalRecipes((current) => current + 1) }} />
+      <SiteHeader onRecipeCreated={(recipe) => setRecipes((current) => [recipe, ...current])} />
       <section className="border-b border-[#dfe3dc] bg-[#fbfaf7]">
         <div className="mx-auto max-w-[1240px] px-5 pb-9 pt-12 lg:px-8 lg:pb-12 lg:pt-16">
           <p className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-[#b76e43]"><span className="h-px w-7 bg-[#b76e43]" />From Pakistani kitchens</p>
@@ -104,7 +101,6 @@ export default function CollectionsPage() {
 
       <section className="mx-auto max-w-[1240px] px-5 py-9 lg:px-8 lg:py-12">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-[#819087]"><strong className="font-semibold text-[#40564a]">{totalRecipes}</strong> recipes to explore</p>
           {hasActiveFilters && <button type="button" onClick={clearFilters} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-[#64736a] transition hover:bg-[#e9eee3] hover:text-[#294337]"><X size={14} /> Clear filters</button>}
         </div>
 
